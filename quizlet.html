@@ -3,7 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quizlet</title>
+    <title>Quizlet: Learning tools & flashcards, for free</title>
+    <meta name="description" content="Study, practice and master whatever you're learning. Quizlet makes simple learning tools that let you study anything. Start learning today with flashcards, games and learning tools – all for free." />
+    <meta name="keywords" content="quizlet, flashcards, learning, study, education, quiz, test" />
+    <meta property="og:title" content="Quizlet: Learning tools & flashcards, for free" />
+    <meta property="og:description" content="Study, practice and master whatever you're learning. Quizlet makes simple learning tools that let you study anything." />
+
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="https://quizlet.com/favicon.ico" />
+
     <script src="https://unpkg.com/heroicons@2.0.18/24/outline/esm/index.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Add Splide.js CSS -->
@@ -1092,7 +1100,7 @@
   </head>
   <body>
     <nav
-      class="flex justify-between items-center p-3 h-16 bg-white sticky top-0 z-10"
+      class="flex justify-between items-center p-3 h-16 bg-white sticky top-0 z-[998]"
     >
       <div class="flex items-center gap-8">
         <a
@@ -2721,11 +2729,38 @@
       // No additional code needed here since it will use the standard dropdown behavior
     </script>
 
-    <!-- Floating Quiz Creation Button -->
-    <div class="fixed bottom-6 right-6 z-50">
+    <!-- Floating Quiz Creation Button with Tooltip -->
+    <div class="fixed bottom-6 right-6 z-50 group" id="quickQuizContainer">
+      <!-- Tooltip Bubble -->
+      <div id="quickQuizTooltip" class="absolute bottom-full right-0 mb-3 bg-white rounded-xl shadow-xl w-72 transform transition-all duration-300 ease-in-out opacity-100 pointer-events-auto border border-[#edf0f5]">
+        <div class="relative p-4">
+          <!-- Close button -->
+          <button id="closeTooltip" class="absolute top-3 right-3 text-[#939BB4] hover:text-[#282e3e] transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          
+          <!-- Content -->
+          <div class="flex flex-col items-start gap-3">
+            <div class="flex-shrink-0">
+              <div class="flex items-center justify-center h-6 bg-gradient-to-r from-[#FF5A5A] to-[#FF8A5A] text-white text-[10px] font-extrabold uppercase tracking-wider px-2 rounded-full shadow-sm leading-none">New Feature</div>
+            </div>
+            <div>
+              <p class="text-sm text-[#2e3856] font-medium leading-snug">Make a quiz, and share it with friends — fast, simple, and no login.</p>
+              <button id="tryQuizNowBtn" class="mt-2 text-xs font-semibold text-[#4255FF] hover:text-[#3a49e0] transition-colors">Try it now →</button>
+            </div>
+          </div>
+          
+          <!-- Triangle pointer -->
+          <div class="absolute bottom-[-8px] right-6 w-4 h-4 bg-white border-r border-b border-[#edf0f5] transform rotate-45"></div>
+        </div>
+      </div>
+      
       <button 
         id="quickQuizButton" 
-        class="flex items-center justify-center rounded-full bg-primary hover:bg-[#423ed8]  text-white w-14 h-14 shadow-lg hover:bg-primary-dark transition-colors duration-200 focus:outline-none"
+        class="flex items-center justify-center rounded-full bg-primary hover:bg-[#423ed8] text-white w-14 h-14 shadow-lg hover:bg-primary-dark transition-colors duration-200 focus:outline-none"
         title="Create a quiz instantly"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2735,9 +2770,9 @@
     </div>
 
     <!-- Quick Quiz Creation Modal -->
-    <div id="quickQuizModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div id="quickQuizModal" class="fixed inset-0 z-[99999] flex items-center justify-center hidden">
       <div class="absolute inset-0 bg-black bg-opacity-80" id="modalOverlay"></div>
-      <div class="relative bg-white rounded-lg w-full overflow-hidden flex flex-col h-full">
+      <div class="relative bg-white  w-full overflow-hidden flex flex-col h-full">
         <div class="flex items-center justify-between p-4 border-b ">
           <h2 class="text-2xl font-bold text-[#4255ff]">⚡ Instant Quiz</h2>
           <button id="closeQuizModal" class="text-black focus:outline-none">
@@ -3016,104 +3051,164 @@
         const closeQuizModal = document.getElementById('closeQuizModal');
         const modalOverlay = document.getElementById('modalOverlay');
         const addQuestionBtn = document.getElementById('addQuestionBtn');
+        const tryQuizNowBtn = document.getElementById('tryQuizNowBtn');
+        const quickQuizContainer = document.getElementById('quickQuizContainer');
+        const questionsContainer = document.getElementById('questionsContainer');
         
-        // Open modal when clicking the floating button
-        quickQuizButton.addEventListener('click', function() {
-          quickQuizModal.classList.remove('hidden');
-          document.body.classList.add('overflow-hidden'); 
+        // Tooltip functionality
+        const tooltip = document.getElementById('quickQuizTooltip');
+        const closeTooltipBtn = document.getElementById('closeTooltip');
+        
+        // Show tooltip by default when page loads
+        let tooltipVisible = true;
+        
+        // Function to hide tooltip
+        function hideTooltip() {
+          tooltip.classList.remove('opacity-100');
+          tooltip.classList.add('opacity-0', 'pointer-events-none');
+          tooltipVisible = false;
+        }
+        
+        // Function to show tooltip
+        function showTooltip() {
+          tooltip.classList.remove('opacity-0', 'pointer-events-none');
+          tooltip.classList.add('opacity-100');
+          tooltipVisible = true;
+        }
+        
+        // Always show tooltip on page load
+        showTooltip();
+        
+        // Close tooltip when close button is clicked
+        closeTooltipBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          hideTooltip();
         });
         
-        // Close modal when clicking the close button or overlay
+        // Always show tooltip on hover of the container
+        quickQuizContainer.addEventListener('mouseenter', function() {
+          showTooltip();
+        });
+        
+        // Hide tooltip when clicking outside
+        document.addEventListener('click', function(e) {
+          if (tooltipVisible && !tooltip.contains(e.target) && !quickQuizContainer.contains(e.target)) {
+            hideTooltip();
+          }
+        });
+        
+        // Open modal when button is clicked
+        quickQuizButton.addEventListener('click', function(e) {
+          e.preventDefault();
+          quickQuizModal.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+          hideTooltip(); // Hide tooltip when opening modal
+        });
+        
+        // Also open modal when "Try it now" button is clicked
+        if (tryQuizNowBtn) {
+          tryQuizNowBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            quickQuizModal.classList.remove('hidden');
+            hideTooltip();
+          });
+        }
+        
+        // Close modal when close button is clicked
         closeQuizModal.addEventListener('click', function() {
           quickQuizModal.classList.add('hidden');
-          document.body.classList.remove('overflow-hidden');
+          document.body.style.overflow = 'auto';
         });
         
-        modalOverlay.addEventListener('click', function() {
-          quickQuizModal.classList.add('hidden');
-          document.body.classList.remove('overflow-hidden');
+        // Close modal when clicking outside the modal content
+        modalOverlay.addEventListener('click', function(e) {
+          if (e.target === modalOverlay) {
+            quickQuizModal.classList.add('hidden');
+          }
         });
         
-        // Add new question when clicking "Add New Question" button
-        addQuestionBtn.addEventListener('click', function() {
-          const questionsContainer = document.getElementById('questionsContainer');
-          const questionCount = questionsContainer.querySelectorAll('.question-item').length + 1;
-          
-          const newQuestion = document.createElement('div');
-          newQuestion.className = 'question-item border border-[#d9dde8] rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow';
-          newQuestion.innerHTML = `
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center">
-                <h4 class="font-semibold text-lg text-[#282e3e]">Question ${questionCount}</h4>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" class="p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors" title="Move up">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m18 15-6-6-6 6"/>
-                  </svg>
-                </button>
-                <button type="button" class="p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors" title="Move down">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
-                </button>
-                <button type="button" class="p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors delete-question" title="Delete question">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 6h18"></path>
-                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            
-            <div class="mb-5">
-              <input type="text" placeholder="Type your question here" class="w-full h-[48px] px-4 focus:border-2 border border-[#d9dde8] rounded-md text-base text-[#282e3e] bg-[#f6f7fb] focus:outline-none focus:border-[#a8b1ff] focus:bg-white font-semibold" style="font-weight: 600;">
-            </div>
-            
-            <div class="mb-4">
-              <div class="flex items-center justify-between mb-3">
-                <label class="text-sm font-semibold text-[#2e3856]">Answer Options</label>
-                <span class="text-xs text-[#646f90]">Select the correct answer</span>
-              </div>
-              <div class="space-y-3 answer-options">
-                <div class="flex items-center p-2 rounded-lg transition-colors">
-                  <input type="radio" name="correctAnswer${questionCount}" value="0" id="answer${questionCount}_0" class="mr-3 h-4 w-4 text-[#4255ff] focus:ring-[#4255ff]">
-                  <label for="answer${questionCount}_0" class="sr-only">Correct answer</label>
-                  <input type="text" placeholder="Correct answer" class="w-full h-[48px] px-4 focus:border-2 border border-[#d9dde8] rounded-md text-base text-[#282e3e] bg-[#f6f7fb] focus:outline-none focus:border-[#a8b1ff] focus:bg-white font-semibold" style="font-weight: 600;">
-                  <button type="button" class="ml-2 p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors remove-option" title="Remove option">
+        // Add new question functionality
+        let questionCount = 1;
+        
+        if (addQuestionBtn) {
+          addQuestionBtn.addEventListener('click', function() {
+            questionCount++;
+            const newQuestion = document.createElement('div');
+            newQuestion.className = 'question-item border border-[#d9dde8] rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow';
+            newQuestion.innerHTML = `
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                  <h4 class="font-semibold text-lg text-[#282e3e]">Question ${questionCount}</h4>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" class="p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors" title="Move up">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                      <path d="m18 15-6-6-6 6"/>
                     </svg>
                   </button>
-                </div>
-                <div class="flex items-center p-2 rounded-lg transition-colors">
-                  <input type="radio" name="correctAnswer${questionCount}" value="1" id="answer${questionCount}_1" class="mr-3 h-4 w-4 text-[#4255ff] focus:ring-[#4255ff]">
-                  <label for="answer${questionCount}_1" class="sr-only">Answer option</label>
-                  <input type="text" placeholder="Answer option" class="w-full h-[48px] px-4 focus:border-2 border border-[#d9dde8] rounded-md text-base text-[#282e3e] bg-[#f6f7fb] focus:outline-none focus:border-[#a8b1ff] focus:bg-white font-semibold" style="font-weight: 600;">
-                  <button type="button" class="ml-2 p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors remove-option" title="Remove option">
+                  <button type="button" class="p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors" title="Move down">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                      <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors delete-question" title="Delete question">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18"></path>
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                     </svg>
                   </button>
                 </div>
               </div>
-            </div>
+              
+              <div class="mb-5">
+                <input type="text" placeholder="Type your question here" class="w-full h-[48px] px-4 focus:border-2 border border-[#d9dde8] rounded-md text-base text-[#282e3e] bg-[#f6f7fb] focus:outline-none focus:border-[#a8b1ff] focus:bg-white font-semibold" style="font-weight: 600;">
+              </div>
+              
+              <div class="mb-4">
+                <div class="flex items-center justify-between mb-3">
+                  <label class="text-sm font-semibold text-[#2e3856]">Answer Options</label>
+                  <span class="text-xs text-[#646f90]">Select the correct answer</span>
+                </div>
+                <div class="space-y-3 answer-options">
+                  <div class="flex items-center p-2 rounded-lg transition-colors">
+                    <input type="radio" name="correctAnswer${questionCount}" value="0" id="answer${questionCount}_0" class="mr-3 h-4 w-4 text-[#4255ff] focus:ring-[#4255ff]">
+                    <label for="answer${questionCount}_0" class="sr-only">Correct answer</label>
+                    <input type="text" placeholder="Correct answer" class="w-full h-[48px] px-4 focus:border-2 border border-[#d9dde8] rounded-md text-base text-[#282e3e] bg-[#f6f7fb] focus:outline-none focus:border-[#a8b1ff] focus:bg-white font-semibold" style="font-weight: 600;">
+                    <button type="button" class="ml-2 p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors remove-option" title="Remove option">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="flex items-center p-2 rounded-lg transition-colors">
+                    <input type="radio" name="correctAnswer${questionCount}" value="1" id="answer${questionCount}_1" class="mr-3 h-4 w-4 text-[#4255ff] focus:ring-[#4255ff]">
+                    <label for="answer${questionCount}_1" class="sr-only">Answer option</label>
+                    <input type="text" placeholder="Answer option" class="w-full h-[48px] px-4 focus:border-2 border border-[#d9dde8] rounded-md text-base text-[#282e3e] bg-[#f6f7fb] focus:outline-none focus:border-[#a8b1ff] focus:bg-white font-semibold" style="font-weight: 600;">
+                    <button type="button" class="ml-2 p-1.5 rounded-md text-[#586380] hover:text-[#282e3e] hover:bg-[#edeff4] focus:outline-none transition-colors remove-option" title="Remove option">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <button type="button" class="add-answer-option inline-flex items-center text-sm text-[#4255ff] font-medium hover:text-[#423ed8] focus:outline-none transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Another Answer
+              </button>
+            `;
             
-            <button type="button" class="add-answer-option inline-flex items-center text-sm text-[#4255ff] font-medium hover:text-[#423ed8] focus:outline-none transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Add Another Answer
-            </button>
-          `;
-          
-          questionsContainer.appendChild(newQuestion);
-          setupQuestionEventListeners(newQuestion);
-        });
+            questionsContainer.appendChild(newQuestion);
+            setupQuestionEventListeners(newQuestion);
+          });
+        }
         
         // Set up event listeners for the initial question
         function setupQuestionEventListeners(questionElement) {
@@ -3185,14 +3280,6 @@
         if (initialQuestion) {
           setupQuestionEventListeners(initialQuestion);
         }
-        
-        // Set up event listeners for quiz challenge cards
-        document.querySelectorAll('.bg-white.border.rounded-lg').forEach(card => {
-          card.addEventListener('click', function() {
-            // This would launch the quiz in a real implementation
-            console.log('Quiz selected:', this.querySelector('h4').textContent);
-          });
-        });
       });
     </script>
   </body>
