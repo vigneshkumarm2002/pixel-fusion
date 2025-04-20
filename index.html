@@ -3151,12 +3151,12 @@
           document.body.style.overflow = 'hidden';
         });
         
-        // Also open modal when "Try it now" button is clicked
         if (tryQuizNowBtn) {
           tryQuizNowBtn.addEventListener('click', function(e) {
             e.preventDefault();
             quickQuizModal.classList.remove('hidden');
             hideTooltip();
+            document.body.style.overflow = 'hidden';
           });
         }
         
